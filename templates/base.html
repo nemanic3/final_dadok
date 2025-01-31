@@ -43,17 +43,21 @@
 </head>
 <body>
     <header>
-        <h1>Welcome to DadokDadok</h1>
+        <h1>DadokDadok</h1>
     </header>
     <nav>
         <ul>
-            <li><a href="/user/signup/">Sign Up</a></li>
-            <li><a href="/user/login/">Login</a></li>
-            <li><a href="/user/logout/">Logout</a></li>
-            <li><a href="/user/mypage/">My Page</a></li>
+            <li><a href="{% url 'signup' %}">Sign Up</a></li>
+            <li><a href="{% url 'login' %}">Login</a></li>
+            <li><a href="{% url 'logout' %}">Logout</a></li>
+            <li><a href="{% url 'mypage' %}">My Page</a></li>
             <li><a href="/goal/">Goal Management</a></li>
             <li><a href="/recommendation/">Recommendations</a></li>
         </ul>
     </nav>
+
+    <div>
+        {% block content %}{% endblock %}  <!-- ✅ 페이지별 내용 삽입 -->
+    </div>
 </body>
 </html>

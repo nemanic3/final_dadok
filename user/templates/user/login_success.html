@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Login Successful!</h1>
+    <p>Welcome back, {{ user.nickname }}!</p>
+    <a href="{% url 'home' %}" class="btn">Go to Home</a>
+</div>
+{% endblock %}

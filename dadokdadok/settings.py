@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'review',
     'goal',
     'recommendation',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -130,10 +131,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'user.CustomUser'
 
 REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',   # ✅ JSON 응답 (유지)
+        'rest_framework.renderers.BrowsableAPIRenderer',  # ✅ Browsable API 다시 활성화
+    ],
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # ✅ JWT 인증 추가
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',  # ✅ 기본적으로 모든 접근 허용
+    ]
 }
+
 
 LOGIN_URL = '/user/login/'
 LOGOUT_REDIRECT_URL = '/'  # 로그아웃 후 리디렉트할 URL 지정

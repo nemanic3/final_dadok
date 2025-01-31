@@ -1,21 +1,6 @@
-"""
-URL configuration for dadokdadok project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView  # ✅ JWT 관련 추가
 from user import views
 
 urlpatterns = [
@@ -23,7 +8,9 @@ urlpatterns = [
     path('user/', include('user.urls')),
     path('books/', include('book.urls')),
     path('reviews/', include('review.urls')),
-    path('goals/', include('goal.urls')),
-    path('recommendations/', include('recommendation.urls')),
+    path('goal/', include('goal.urls')),
+    path('recommendation/', include('recommendation.urls')),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # ✅ JWT 토큰 발급
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # ✅ JWT 토큰 갱신
     path('', views.home, name='home'),  # 루트 URL에 home 뷰 연결
 ]

@@ -1,10 +1,17 @@
-from django.shortcuts import render
-
+from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth import authenticate, logout, login
+from django.contrib.auth.decorators import login_required
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 import json
 from .models import CustomUser
+from .serializers import UserSerializer  # ✅ 시리얼라이저 추가
+
 
 @csrf_exempt
 def signup(request):
@@ -35,22 +42,20 @@ def signup(request):
                 student_id=student_id
             )
 
-            return redirect('signup_success')
+            return render(request, 'user/signup_success.html', {'user': user})  # ✅ JSON 반환
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
     elif request.method == 'GET':
         return render(request, 'user/signup.html')
 
+
 def signup_success(request):
     return render(request, 'user/signup_success.html')
 
 
-from django.contrib.auth import authenticate
-from rest_framework_simplejwt.tokens import RefreshToken
-
 @csrf_exempt
-def login(request):
+def login_view(request):
     if request.method == 'POST':
         try:
             username = request.POST.get('username')
@@ -61,58 +66,51 @@ def login(request):
             if user is None:
                 return JsonResponse({'error': 'Invalid credentials'}, status=401)
 
+            login(request, user)  # ✅ Django 세션 로그인
+
             # JWT 토큰 발급
             refresh = RefreshToken.for_user(user)
-            return JsonResponse({
-                "token": str(refresh.access_token)
+            access_token = str(refresh.access_token)
+
+            return render(request, 'user/login_success.html',{
+                "token": access_token
             })
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
 
     return render(request, 'user/login.html')
 
-from django.contrib.auth import logout
-from django.shortcuts import redirect
+def login_success(request):
+    return render(request, 'user/login_success.html')
 
 def logout_user(request):
     logout(request)
     return redirect('/')
 
 
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def me(request):
     user = request.user
-    return Response({
-        "id": user.id,
-        "username": user.username,
-        "nickname": user.nickname,
-        "email": user.email
-    })
+    return Response(UserSerializer(user).data)  # ✅ 시리얼라이저 활용
+
 
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_user(request):
-    confirm = request.data.get('confirm')
-    if confirm != "yes":
-        return Response({"error": "Please confirm account deletion by sending 'confirm: yes' in the request body."}, status=400)
+    try:
+        user = request.user
+        user.delete()  # 현재 로그인된 사용자를 삭제
+        return Response({"message": "Account successfully deleted."}, status=204)
+    except Exception as e:
+        return Response({"error": str(e)}, status=400)
 
-    user = request.user
-    username = user.username
-    user.delete()
-    return Response({"message": f"The account '{username}' has been successfully deleted."}, status=200)
 
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def my_page(request):
     return render(request, 'user/mypage.html', {'user': request.user})
-
 
 
 def home(request):
