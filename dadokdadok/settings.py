@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-8pv46p(-rc3hi%-7k21p-^x(k!5s2f6wen-lip92(4ei4o7$f(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '192.168.182.8']  # 192.168.x.x는 백엔드 컴퓨터의 IPv4 주소
 
 
 # Application definition
@@ -41,8 +41,8 @@ INSTALLED_APPS = [
     'book',
     'review',
     'goal',
-    'recommendation',
     'rest_framework',
+    'corsheaders'
 ]
 
 MIDDLEWARE = [
@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'dadokdadok.urls'
@@ -146,3 +147,12 @@ REST_FRAMEWORK = {
 
 LOGIN_URL = '/user/login/'
 LOGOUT_REDIRECT_URL = '/'  # 로그아웃 후 리디렉트할 URL 지정
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://192.168.182.8:8000"
+]
+
+NAVER_CLIENT_ID = "XuZkPyhdBVtFtXAvM4x9"
+NAVER_CLIENT_SECRET = "qc9LqfIhrj"
+NAVER_BOOKS_API_URL = "https://openapi.naver.com/v1/search/book.json"

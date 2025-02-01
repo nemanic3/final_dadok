@@ -1,7 +1,8 @@
 from django.urls import path
 from . import views
+from .views import create_review
 
 urlpatterns = [
-    path('', views.get_reviews, name='get_reviews'),  # GET /reviews/
-    path('create/', views.create_review, name='create_review'),  # POST /reviews/create/
+    path('reviews/form/', views.review_form, name='review_form'),
+    path("create/", create_review, name="create_review"),  # 리뷰 저장 API
 ]
