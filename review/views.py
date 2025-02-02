@@ -1,5 +1,3 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -8,16 +6,17 @@ from .models import Review
 from .serializers import ReviewSerializer
 import requests
 from django.conf import settings
+from rest_framework.viewsets import ModelViewSet
 
-### 📌 기존 API (유지) ###
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_review(request):
     """
-    리뷰 저장 API (POST)
-    네이버 API에서 가져온 책의 정보를 기반으로 리뷰를 저장
+    ✅ 리뷰 저장 API (POST)
+    - 네이버 API에서 가져온 책의 정보를 기반으로 리뷰 저장
+    - 클라이언트에서 `isbn`, `content`, `rating` 값을 전달해야 함
     """
-    isbn = request.data.get('isbn')  # 책 ISBN 받기
+    isbn = request.data.get('isbn')
     content = request.data.get('content')
     rating = request.data.get('rating')
 
@@ -42,7 +41,7 @@ def create_review(request):
             # 리뷰 저장
             review = Review.objects.create(
                 user=request.user,
-                book_isbn=isbn,  # 기존 book_id가 아닌 isbn 저장
+                book_isbn=isbn,
                 book_title=book_info['title'],
                 book_author=book_info['author'],
                 content=content,
@@ -68,24 +67,19 @@ def create_review(request):
 @api_view(['GET'])
 def get_reviews(request):
     """
-    전체 리뷰 목록 조회 API (GET)
+    ✅ 전체 리뷰 목록 조회 API (GET)
     """
     reviews = Review.objects.all()
     serializer = ReviewSerializer(reviews, many=True)
     return Response(serializer.data)
 
-### 📌 HTML 폼 기반 리뷰 작성 ###
-@login_required
-def review_form(request):
-    """
-    HTML 기반 리뷰 작성 페이지
-    """
-    isbn = request.GET.get('isbn')  # GET 요청에서 isbn을 받음
 
-    if not isbn:
-        return render(request, "review/review_form.html", {"error": "잘못된 접근입니다."})
-
-    # 네이버 API에서 책 정보 가져오기
+@api_view(['GET'])
+def get_book_info(request, isbn):
+    """
+    ✅ 특정 책 정보 조회 API (GET)
+    - 프론트엔드에서 `isbn`을 전달하면 네이버 API에서 해당 책 정보를 가져옴
+    """
     url = settings.NAVER_BOOKS_API_URL
     headers = {
         "X-Naver-Client-Id": settings.NAVER_CLIENT_ID,
@@ -98,9 +92,15 @@ def review_form(request):
     if response.status_code == 200:
         data = response.json()
         if data["items"]:
-            book_info = data["items"][0]
-            return render(request, "review/review_form.html", {"book": book_info})
+            return Response(data["items"][0])  # 첫 번째 검색 결과 반환
         else:
-            return render(request, "review/review_form.html", {"error": "책을 찾을 수 없습니다."})
+            return Response({"error": "책을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
     else:
-        return render(request, "review/review_form.html", {"error": "네이버 API 호출 실패"})
+        return Response({"error": "네이버 API 호출 실패"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class ReviewViewSet(ModelViewSet):
+    """
+    A viewset for viewing and editing Review instances.
+    """
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer

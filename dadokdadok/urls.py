@@ -1,15 +1,18 @@
-from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView  # ✅ JWT 관련 추가
-from user import views
+from rest_framework.routers import DefaultRouter
+from user.views import UserViewSet
+from book.views import BookViewSet
+from review.views import ReviewViewSet
+from goal.views import GoalViewSet
+from rest_framework.documentation import include_docs_urls
+
+router = DefaultRouter()
+router.register('users', UserViewSet, basename='user')
+router.register('books', BookViewSet, basename='book')
+router.register('reviews', ReviewViewSet, basename='review')
+router.register('goals', GoalViewSet, basename='goal')
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('user/', include('user.urls')),
-    path('book/', include('book.urls')),
-    path('reviews/', include('review.urls')),
-    path('goal/', include('goal.urls')),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # ✅ JWT 토큰 발급
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),  # ✅ JWT 토큰 갱신
-    path('', views.home, name='home'),  # 루트 URL에 home 뷰 연결
+    path('api/', include(router.urls)),  # API 엔드포인트 추가
+    path('api/docs/', include_docs_urls(title="DadokDadok API")),
 ]

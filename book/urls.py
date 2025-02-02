@@ -1,7 +1,7 @@
-from django.urls import path
-from . import views
+from rest_framework.routers import DefaultRouter
+from .views import BookViewSet
 
-urlpatterns = [
-    path('search/', views.search_books, name='search_books'),  # ✅ /books/search/
-    path('get/<str:isbn>/', views.get_book_by_isbn, name='get_book_by_isbn'),  # ✅ /books/get/{isbn}/
-]
+router = DefaultRouter()
+router.register(r'', BookViewSet, basename='book')  # /book/ API 엔드포인트
+
+urlpatterns = router.urls
