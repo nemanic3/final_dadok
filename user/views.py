@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, logout, login
+from django.contrib.auth import authenticate, logout
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes
@@ -9,7 +9,7 @@ import json
 from django.http import JsonResponse
 from rest_framework.viewsets import ModelViewSet
 from .models import CustomUser
-from .serializers import UserSerializer  # ✅ 시리얼라이저 추가
+from .serializers import UserSerializer
 
 ### ✅ 회원가입 (POST)
 @csrf_exempt
@@ -21,7 +21,6 @@ def signup(request):
             password = data.get('password')
             nickname = data.get('nickname')
             email = data.get('email')
-            student_id = data.get('student_id')
 
             # ✅ 유효성 검사
             if CustomUser.objects.filter(username=username).exists():
@@ -30,8 +29,6 @@ def signup(request):
                 return JsonResponse({'error': 'Email already exists'}, status=400)
             if CustomUser.objects.filter(nickname=nickname).exists():
                 return JsonResponse({'error': 'Nickname already exists'}, status=400)
-            if CustomUser.objects.filter(student_id=student_id).exists():
-                return JsonResponse({'error': 'Student ID already exists'}, status=400)
 
             # ✅ 사용자 생성
             user = CustomUser.objects.create(
@@ -39,7 +36,6 @@ def signup(request):
                 password=make_password(password),  # 비밀번호 암호화
                 nickname=nickname,
                 email=email,
-                student_id=student_id
             )
 
             return JsonResponse({
@@ -49,7 +45,6 @@ def signup(request):
                     "username": user.username,
                     "nickname": user.nickname,
                     "email": user.email,
-                    "student_id": user.student_id
                 }
             }, status=201)
         except Exception as e:
