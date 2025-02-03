@@ -1,7 +1,8 @@
-from rest_framework.routers import DefaultRouter
-from .views import BookViewSet
+from django.urls import path
+from .views import search_books, get_book_by_isbn
 
-router = DefaultRouter()
-router.register(r'', BookViewSet, basename='book')  # /book/ API 엔드포인트
-
-urlpatterns = router.urls
+urlpatterns = [
+    path('search/', search_books, name='search_books'),
+    path('get/<str:isbn>/', get_book_by_isbn, name='get_book_by_isbn'),
+    path('search/custom/', search_books, name='custom_book_search'),  # ViewSet 메서드 대신 활용
+]
