@@ -1,18 +1,8 @@
 from django.urls import path
-from .views import GoalViewSet
-
-goal_list = GoalViewSet.as_view({
-    'get': 'list',  # 목록 조회
-    'post': 'create',  # 목표 생성
-})
-
-goal_detail = GoalViewSet.as_view({
-    'get': 'retrieve',  # 특정 목표 조회
-    'put': 'update',  # 목표 수정
-    'delete': 'destroy',  # 목표 삭제
-})
+from .views import GoalListView, GoalCreateView, UserGoalView
 
 urlpatterns = [
-    path('', goal_list, name='goal-list'),  # /goal/에서 목록 조회 및 목표 생성
-    path('<int:pk>/', goal_detail, name='goal-detail'),  # /goal/{id}/에서 조회, 수정, 삭제
+    path('', GoalListView.as_view(), name='goal-list'),  # 모든 목표 조회 (GET)
+    path('<int:user_id>/create/', GoalCreateView.as_view(), name='goal-create'),  # 특정 사용자의 목표 생성 (POST)
+    path('<int:user_id>/detail/', UserGoalView.as_view(), name='user-goal-detail'),  # 특정 사용자의 목표 조회, 수정, 삭제
 ]

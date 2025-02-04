@@ -1,23 +1,39 @@
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView
 from .models import Goal
 from .serializers import GoalSerializer
+from rest_framework.permissions import AllowAny
+from django.shortcuts import get_object_or_404
+from django.contrib.auth import get_user_model
 
-class GoalViewSet(ModelViewSet):
+User = get_user_model()
+
+class GoalListView(ListAPIView):
     """
-    ✅ 목표 관리 API (JSON 응답)
-    - 목록 조회 (GET /goal/)
-    - 목표 생성 (POST /goal/)
-    - 특정 목표 조회 (GET /goal/{id}/)
-    - 목표 수정 (PUT /goal/{id}/)
-    - 목표 삭제 (DELETE /goal/{id}/)
+    모든 목표 조회 (GET)
     """
     queryset = Goal.objects.all()
     serializer_class = GoalSerializer
-    permission_classes = [IsAuthenticated]  # ✅ 로그인한 사용자만 접근 가능
+    permission_classes = [AllowAny]
+
+class GoalCreateView(CreateAPIView):
+    """
+    특정 사용자의 목표 생성 (POST)
+    """
+    serializer_class = GoalSerializer
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        """
-        ✅ 목표를 생성할 때 현재 로그인한 사용자를 자동으로 저장
-        """
-        serializer.save(user=self.request.user)
+        user_id = self.kwargs.get('user_id')  # URL에서 user_id 가져오기
+        user = get_object_or_404(User, id=user_id)  # 해당 user 존재 확인
+        serializer.save(user=user)  # user 필드를 자동으로 채워서 저장
+
+class UserGoalView(RetrieveUpdateDestroyAPIView):
+    """
+    특정 사용자의 목표 조회, 수정, 삭제 (GET, PUT, PATCH, DELETE)
+    """
+    serializer_class = GoalSerializer
+    permission_classes = [AllowAny]
+
+    def get_object(self):
+        user_id = self.kwargs.get('user_id')  # URL에서 user_id 가져오기
+        return get_object_or_404(Goal, user_id=user_id)  # 특정 사용자의 Goal 반환

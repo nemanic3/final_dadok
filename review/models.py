@@ -1,6 +1,9 @@
 from django.db import models
 from user.models import CustomUser
 from django.conf import settings
+from django.contrib.auth import get_user_model
+
+User = get_user_model()  # ✅ Django 기본 User 모델 가져오기
 
 class Review(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -30,3 +33,15 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.user.username} on {self.review.id}"
+
+
+class Like(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="likes")
+
+    class Meta:
+        db_table = "like"
+        unique_together = ("user", "review")  # ✅ 같은 리뷰에 중복 좋아요 방지
+
+    def __str__(self):
+        return f"{self.user.username} liked {self.review}"

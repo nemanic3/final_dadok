@@ -2,14 +2,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Review
-from .serializers import ReviewSerializer
+from .models import Review, Like, Comment
 import requests
 from django.conf import settings
 from rest_framework.viewsets import ModelViewSet
-from django.db.models import Q
-from .models import Comment
-from .serializers import CommentSerializer
+from .serializers import CommentSerializer, ReviewSerializer, LikeSerializer
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -247,3 +244,39 @@ def delete_comment(request, comment_id):
 
     comment.delete()
     return Response({"message": "댓글이 삭제되었습니다."}, status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def like_review(request, review_id):
+    """
+    ✅ 리뷰 좋아요/취소 API (POST)
+    - 사용자가 같은 리뷰에 좋아요를 누르면 삭제(취소)
+    - 좋아요를 처음 누르면 생성됨
+    """
+    try:
+        review = Review.objects.get(id=review_id)
+    except Review.DoesNotExist:
+        return Response({"error": "리뷰를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
+    like, created = Like.objects.get_or_create(user=request.user, review=review)
+
+    if not created:
+        like.delete()
+        return Response({"message": "좋아요가 취소되었습니다."}, status=status.HTTP_200_OK)
+
+    return Response({"message": "좋아요가 추가되었습니다."}, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+def get_likes_count(request, review_id):
+    """
+    ✅ 특정 리뷰의 좋아요 개수 조회 API (GET)
+    """
+    try:
+        review = Review.objects.get(id=review_id)
+    except Review.DoesNotExist:
+        return Response({'error': '리뷰를 찾을 수 없습니다.'}, status=status.HTTP_404_NOT_FOUND)
+
+    likes_count = review.likes.count()
+    return Response({'review_id': review_id, 'likes_count': likes_count}, status=status.HTTP_200_OK)
