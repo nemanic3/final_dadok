@@ -1,39 +1,22 @@
 from django.db import models
-from user.models import CustomUser
-from django.conf import settings
 from django.contrib.auth import get_user_model
 
-User = get_user_model()  # ✅ Django 기본 User 모델 가져오기
+User = get_user_model()
 
 class Review(models.Model):
     id = models.BigAutoField(primary_key=True)
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)  # 작성자
-    book_isbn = models.CharField(max_length=20, default="")  # ISBN
-    book_title = models.CharField(max_length=200, default="")  # 도서 제목
-    book_author = models.CharField(max_length=100, default="")  # 도서 저자
-    content = models.TextField(null=True, blank=True)  # 감상문 내용
-    rating = models.FloatField(null=True, blank=True)  # 평점
-    created_at = models.DateTimeField(auto_now_add=True)  # 작성 시간
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reviews")
+    book = models.ForeignKey("book.Book", on_delete=models.CASCADE, related_name="reviews")
+    content = models.TextField(null=True, blank=True)
+    rating = models.FloatField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'review'
+        db_table = "review"
 
     def __str__(self):
-        return f"{self.user.username}'s review of {self.book_title}"
-
-
-class Comment(models.Model):
-    review = models.ForeignKey('Review', on_delete=models.CASCADE, related_name='comments')  # 어떤 리뷰에 달린 댓글인지
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)  # 댓글 작성자
-    content = models.TextField()  # 댓글 내용
-    created_at = models.DateTimeField(auto_now_add=True)  # 댓글 작성 시간
-
-    class Meta:
-        db_table = 'comment'
-
-    def __str__(self):
-        return f"Comment by {self.user.username} on {self.review.id}"
-
+        return f"{self.user.username}'s review of {self.book.title}"
 
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -41,7 +24,22 @@ class Like(models.Model):
 
     class Meta:
         db_table = "like"
-        unique_together = ("user", "review")  # ✅ 같은 리뷰에 중복 좋아요 방지
+        constraints = [
+            models.UniqueConstraint(fields=["user", "review"], name="unique_like")
+        ]
 
     def __str__(self):
         return f"{self.user.username} liked {self.review}"
+
+class Comment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name="comments")
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)  # ✅ 수정 시간 추가
+
+    class Meta:
+        db_table = "comment"
+
+    def __str__(self):
+        return f"{self.user.username} commented on {self.review}"

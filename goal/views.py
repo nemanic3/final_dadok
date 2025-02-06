@@ -1,39 +1,53 @@
-from rest_framework.generics import ListAPIView, CreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
 from .models import Goal
 from .serializers import GoalSerializer
-from rest_framework.permissions import AllowAny
-from django.shortcuts import get_object_or_404
-from django.contrib.auth import get_user_model
 
-User = get_user_model()
-
-class GoalListView(ListAPIView):
+class GoalViewSet(ModelViewSet):
     """
-    모든 목표 조회 (GET)
-    """
-    queryset = Goal.objects.all()
-    serializer_class = GoalSerializer
-    permission_classes = [AllowAny]
-
-class GoalCreateView(CreateAPIView):
-    """
-    특정 사용자의 목표 생성 (POST)
+    사용자별 목표 관리 (연간 & 월간)
     """
     serializer_class = GoalSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Goal.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        user_id = self.kwargs.get('user_id')  # URL에서 user_id 가져오기
-        user = get_object_or_404(User, id=user_id)  # 해당 user 존재 확인
-        serializer.save(user=user)  # user 필드를 자동으로 채워서 저장
+        serializer.save(user=self.request.user)
 
-class UserGoalView(RetrieveUpdateDestroyAPIView):
+class AnnualGoalView(APIView):
     """
-    특정 사용자의 목표 조회, 수정, 삭제 (GET, PUT, PATCH, DELETE)
+    연간 목표 조회 API
     """
-    serializer_class = GoalSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        user_id = self.kwargs.get('user_id')  # URL에서 user_id 가져오기
-        return get_object_or_404(Goal, user_id=user_id)  # 특정 사용자의 Goal 반환
+    def get(self, request):
+        annual_goals = Goal.objects.filter(user=request.user, goal_type='annual')
+        serializer = GoalSerializer(annual_goals, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class MonthlyGoalView(APIView):
+    """
+    월간 목표 조회 API
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        monthly_goals = Goal.objects.filter(user=request.user, goal_type='monthly')
+        serializer = GoalSerializer(monthly_goals, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class GoalProgressView(APIView):
+    """
+    목표 진행률 조회 API
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        goals = Goal.objects.filter(user=request.user)
+        serializer = GoalSerializer(goals, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

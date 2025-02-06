@@ -1,21 +1,30 @@
-from django.core.validators import MinValueValidator
 import datetime
 from django.db import models
 from django.conf import settings
 
+def get_end_of_year():
+    """
+    올해 마지막 날 반환
+    """
+    today = datetime.date.today()
+    return today.replace(month=12, day=31)  # datetime.date 객체 반환
+
 class Goal(models.Model):
+    GOAL_TYPE_CHOICES = [
+        ('annual', '연간 목표'),
+        ('monthly', '월간 목표'),
+    ]
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    year = models.PositiveIntegerField(default=datetime.date.today().year)  # 목표 연도
-    target_books = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)]  # 1 이상 입력 필수
-    )
-    is_completed = models.BooleanField(default=False)  # 목표 달성 여부
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    goal_type = models.CharField(max_length=10, choices=GOAL_TYPE_CHOICES, default='annual')
+    start_date = models.DateField(default=datetime.date.today)
+    end_date = models.DateField(default=get_end_of_year)  # 올해 마지막 날
+    is_completed = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'goal'
-        constraints = [
-            models.UniqueConstraint(fields=['user', 'year'], name='unique_user_goal_year')
-        ]  # 한 사용자당 1년에 하나의 목표만 가능
 
     def __str__(self):
-        return f"{self.year}년 목표: {self.target_books}권 읽기"
+        return f"{self.user.nickname} - {self.title}"

@@ -1,72 +1,60 @@
-import requests
-from django.conf import settings
-from rest_framework.decorators import api_view
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.viewsets import ModelViewSet
-from .models import Book  # Book 모델 import
-from .serializers import BookSerializer  # BookSerializer import
-from rest_framework.decorators import action
+from .serializers import BookSerializer, NaverBookSerializer, BookWithReviewSerializer
+from .models import Book
+from review.models import Review
+from .services import search_books_from_naver, get_book_by_isbn_from_naver
 
-@api_view(['GET'])
-def search_books(request):
-    """
-    네이버 API를 이용한 도서 검색
-    """
-    query = request.GET.get("query", "")
-    if not query:
-        return Response({"error": "검색어를 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
+class SearchBookView(APIView):
+    """ 네이버 API를 이용한 도서 검색 API """
+    permission_classes = [AllowAny]
 
-    url = settings.NAVER_BOOKS_API_URL
-    headers = {
-        "X-Naver-Client-Id": settings.NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": settings.NAVER_CLIENT_SECRET,
-    }
-    params = {"query": query, "display": 10}
+    def get(self, request):
+        query = request.GET.get("query", "")
+        if not query:
+            return Response({"error": "검색어를 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
 
-    response = requests.get(url, headers=headers, params=params)
+        try:
+            data = search_books_from_naver(query)
+            print("🔍 네이버 API 응답 데이터:", data)
 
-    if response.status_code == 200:
-        data = response.json()
-        return Response(data["items"], status=status.HTTP_200_OK)
-    else:
-        return Response({"error": "네이버 API 호출 실패"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            if isinstance(data, list) and data:
+                serialized_data = NaverBookSerializer(data, many=True).data
+                return Response(serialized_data, status=status.HTTP_200_OK)
+            return Response({"error": "네이버 API에서 데이터를 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def get_book_by_isbn(request, isbn):
-    """
-    리뷰 작성 시 특정 책의 정보를 네이버 API에서 가져옴
-    """
-    url = settings.NAVER_BOOKS_API_URL
-    headers = {
-        "X-Naver-Client-Id": settings.NAVER_CLIENT_ID,
-        "X-Naver-Client-Secret": settings.NAVER_CLIENT_SECRET,
-    }
-    params = {"query": isbn, "display": 1}
 
-    response = requests.get(url, headers=headers, params=params)
+class GetBookByISBNView(APIView):
+    """ ISBN을 이용한 개별 도서 조회 API """
+    permission_classes = [AllowAny]  # ✅ 인증 없이 접근 가능
 
-    if response.status_code == 200:
-        data = response.json()
-        if data["items"]:
-            return Response(data["items"][0], status=status.HTTP_200_OK)
-        else:
+    def get(self, request, isbn):
+        try:
+            book = Book.objects.filter(isbn=isbn).first()
+            if book:
+                return Response(BookSerializer(book).data, status=status.HTTP_200_OK)
+
+            data = get_book_by_isbn_from_naver(isbn)
+            if data:
+                serialized_data = NaverBookSerializer(data).data
+                return Response(serialized_data, status=status.HTTP_200_OK)
             return Response({"error": "책을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
-    else:
-        return Response({"error": "네이버 API 호출 실패"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class BookViewSet(ModelViewSet):
-    """
-    A viewset for viewing and editing Book instances.
-    """
-    queryset = Book.objects.all()
-    serializer_class = BookSerializer
+class RecentReviewView(APIView):
+    """ 최근 리뷰된 도서 목록 조회 API """
+    permission_classes = [AllowAny]  # ✅ 인증 없이 접근 가능
 
-    @action(detail=False, methods=['get'])
-    def search(self, request):
-        query = request.GET.get('query', '')
-        if query:
-            books = Book.objects.filter(title__icontains=query)  # 제목에 검색어 포함된 책 필터링
-            serializer = self.get_serializer(books, many=True)
-            return Response(serializer.data)
-        return Response({"error": "검색어를 입력하세요."}, status=400)
+    def get(self, request):
+        try:
+            recent_reviews = Review.objects.select_related("book").order_by("-created_at")[:10]
+            books = list({review.book for review in recent_reviews})
+            serialized_books = BookWithReviewSerializer(books, many=True).data
+            return Response(serialized_books, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
