@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import GoalViewSet, GoalProgressView, MonthlyReadingProgressView
 
 router = DefaultRouter()
-router.register('', GoalViewSet, basename='goal')
+router.register('goal', GoalViewSet, basename='goal')
 
 urlpatterns = [
     path('', include(router.urls)),

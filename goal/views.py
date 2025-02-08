@@ -30,6 +30,7 @@ class GoalProgressView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        print("GoalProgressView called")
         user = request.user
         goal = Goal.objects.filter(user=user).first()
 
