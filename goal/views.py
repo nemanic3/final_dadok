@@ -74,6 +74,8 @@ class MonthlyReadingProgressView(APIView):
 
         # ✅ YYYY-MM 형식으로 변환
         monthly_data = {entry["month"].strftime("%Y-%m"): entry["count"] for entry in monthly_reading}
+        monthly_data = {month: monthly_data.get(month, 0) for month in
+                        [f"{current_year}-{str(m).zfill(2)}" for m in range(1, 13)]}
 
         return Response({
             "goal_books": goal.total_books,
