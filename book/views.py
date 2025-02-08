@@ -18,8 +18,6 @@ class SearchBookView(APIView):
 
         try:
             data = search_books_from_naver(query)
-            print("🔍 네이버 API 응답 데이터:", data)
-
             if isinstance(data, list) and data:
                 serialized_data = NaverBookSerializer(data, many=True).data
                 return Response(serialized_data, status=status.HTTP_200_OK)
@@ -30,7 +28,7 @@ class SearchBookView(APIView):
 
 class GetBookByISBNView(APIView):
     """ ISBN을 이용한 개별 도서 조회 API """
-    permission_classes = [AllowAny]  # ✅ 인증 없이 접근 가능
+    permission_classes = [AllowAny]
 
     def get(self, request, isbn):
         try:
@@ -48,7 +46,7 @@ class GetBookByISBNView(APIView):
 
 class RecentReviewView(APIView):
     """ 최근 리뷰된 도서 목록 조회 API """
-    permission_classes = [AllowAny]  # ✅ 인증 없이 접근 가능
+    permission_classes = [AllowAny]
 
     def get(self, request):
         try:

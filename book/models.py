@@ -1,6 +1,7 @@
 from django.db import models
 
 class Book(models.Model):
+    """ 책 모델 """
     id = models.BigAutoField(primary_key=True)
     title = models.CharField(max_length=255)
     author = models.CharField(max_length=255, null=True, blank=True)

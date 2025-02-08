@@ -1,30 +1,14 @@
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Recommendation
-from .serializers import RecommendationSerializer
 from .services import get_book_recommendations
-
-class RecommendationViewSet(ModelViewSet):
-    """
-    사용자가 직접 추가하는 추천 API (CRUD)
-    """
-    serializer_class = RecommendationSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return Recommendation.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
 
 class NaverRecommendationView(APIView):
     """
-    네이버 API를 활용한 추천 도서 리스트 반환
+    네이버 API를 활용한 추천 도서 리스트 반환 (책 상세 페이지에서 사용)
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]  # ✅ 인증 없이 접근 가능
 
     def get(self, request):
         query = request.GET.get("query", "")

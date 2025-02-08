@@ -26,7 +26,7 @@ class NaverBookSerializer(serializers.Serializer):
             "publisher": instance.get("publisher", "출판사 정보 없음"),
             "published_date": instance.get("pubdate", "출판일 정보 없음"),
             "isbn": instance.get("isbn", "ISBN 정보 없음"),
-            "image_url": instance.get("image", ""),  # ✅ 이미지 필드 매칭 확인
+            "image_url": instance.get("image", ""),
             "link": instance.get("link", ""),
         }
 

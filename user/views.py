@@ -51,7 +51,7 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data["refresh_token"]
+            refresh_token = request.data.get("refresh_token")
             token = RefreshToken(refresh_token)
             token.blacklist()  # RefreshToken을 블랙리스트에 추가
             return Response({"message": "Successfully logged out."}, status=status.HTTP_200_OK)
