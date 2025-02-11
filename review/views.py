@@ -160,5 +160,29 @@ class StarIconsView(APIView):
         return Response({
             "empty": f"{settings.MEDIA_URL}icons/star_empty.svg",
             "half": f"{settings.MEDIA_URL}icons/star_half.svg",
-            "full": f"{settings.MEDIA_URL}icons/star_full.svg"
+            "full": f"{settings.MEDIA_URL}icons/star_full.svg",
+            "review": f"{settings.MEDIA_URL}icons/review_star.svg"
+        })
+
+
+
+class HeartIconsView(APIView):
+    """ 좋아요(하트) 이미지 URL 반환 """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            "empty": f"{settings.MEDIA_URL}icons/heart_empty.svg",
+            "full": f"{settings.MEDIA_URL}icons/heart_full.svg"
+        })
+
+
+class IconsView(APIView):
+    """공통 아이콘 이미지 URL 반환"""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            "arrow": f"{settings.MEDIA_URL}icons/arrow_seeall.svg",
+            "edit": f"{settings.MEDIA_URL}icons/edit_emoji.svg"
         })
