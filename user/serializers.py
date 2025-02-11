@@ -8,6 +8,9 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'nickname', 'email', 'profile_image']
+        extra_kwargs = {
+            'profile_image': {'required': False}  # ✅ 프로필 이미지 필수 입력이 아님
+        }
 
 class SignupSerializer(serializers.ModelSerializer):
     class Meta:
