@@ -7,6 +7,8 @@ from rest_framework.decorators import action
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
 from .serializers import UserSerializer, SignupSerializer
+from django.conf import settings
+import os
 
 User = get_user_model()
 
@@ -80,3 +82,48 @@ class UserViewSet(viewsets.ViewSet):
         user = request.user
         user.delete()
         return Response({"message": "Account successfully deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+
+class ProfileImageListView(APIView):
+    """ 사용자가 선택할 수 있는 프로필 이미지 리스트 제공 """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            "profile_images": [
+                f"{settings.MEDIA_URL}profile_images/profile_image.svg",
+                f"{settings.MEDIA_URL}profile_images/profile_image1.svg",
+                f"{settings.MEDIA_URL}profile_images/profile_image2.svg",
+                f"{settings.MEDIA_URL}profile_images/profile_image3.svg",
+                f"{settings.MEDIA_URL}profile_images/profile_image4.svg",
+                f"{settings.MEDIA_URL}profile_images/profile_image5.svg",
+            ]
+        })
+
+
+class UpdateProfileImageView(APIView):
+    """ 사용자가 선택한 프로필 이미지를 저장 """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        selected_image = request.data.get("profile_image")  # 사용자가 선택한 이미지 URL
+
+        # ✅ 선택한 이미지가 미리 제공된 이미지 목록에 있는지 확인
+        allowed_images = [
+            "profile_images/profile_image.svg",
+            "profile_images/profile_image1.svg",
+            "profile_images/profile_image2.svg",
+            "profile_images/profile_image3.svg",
+            "profile_images/profile_image4.svg",
+            "profile_images/profile_image5.svg",
+        ]
+
+        if selected_image not in allowed_images:
+            return Response({"error": "올바른 프로필 이미지를 선택하세요."}, status=400)
+
+        # ✅ 유저 프로필 이미지 업데이트
+        user.profile_image = selected_image
+        user.save()
+
+        return Response({"message": "프로필 이미지가 업데이트되었습니다.", "profile_image": f"{settings.MEDIA_URL}{selected_image}"}, status=200)

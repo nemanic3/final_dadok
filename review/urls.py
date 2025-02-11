@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import (
     ReviewViewSet, LikeReviewView, CommentView, CommentListView,
-    RecentReviewView, MyLibraryView, BookReviewsView
+    RecentReviewView, MyLibraryView, BookReviewsView, StarIconsView
 )
 
 router = DefaultRouter()
@@ -20,7 +20,10 @@ urlpatterns = [
     path('library/', MyLibraryView.as_view(), name='my_library'),
 
     # ✅ 특정 책의 최신 리뷰 목록
-    path('review/<int:book_id>/', BookReviewsView.as_view(), name='book_reviews'),
+    path('library/<str:isbn>/', BookReviewsView.as_view(), name='book_reviews'),
+
+    # ✅ 별점 이미지 URL 제공
+    path('stars/', StarIconsView.as_view(), name='star_icons')
 ]
 
 urlpatterns += router.urls

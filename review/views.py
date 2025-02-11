@@ -7,6 +7,7 @@ from .models import Review, Like, Comment
 from book.models import Book
 from .serializers import ReviewSerializer, LikeSerializer, CommentSerializer
 from book.services import get_book_by_isbn_from_naver
+from django.conf import settings
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """ 리뷰 CRUD 기능 제공 """
@@ -131,15 +132,32 @@ class BookReviewsView(APIView):
     """ 특정 책의 최신 리뷰 목록 조회 """
     permission_classes = [AllowAny]
 
-    def get(self, request, book_id):
-        reviews = Review.objects.filter(book__id=book_id).order_by("-created_at")
+    def get(self, request, isbn):
+        book = Book.objects.filter(isbn=isbn).first()  # ✅ ISBN으로 책 조회
+        if not book:
+            return Response({"error": "해당 ISBN에 대한 책을 찾을 수 없습니다."}, status=404)
+
+        reviews = Review.objects.filter(book=book).order_by("-created_at")
         data = [
             {
                 "user": review.user.nickname,
                 "rating": review.rating,
-                "content": review.content[:50],  # 짧은 리뷰 내용만 표시
+                "content": review.content[:50],  # ✅ 짧은 리뷰만 표시
                 "created_at": review.created_at.strftime('%Y-%m-%d %H:%M:%S')
             }
             for review in reviews
         ]
         return Response(data, status=status.HTTP_200_OK)
+
+
+
+class StarIconsView(APIView):
+    """별 이미지 URL 반환"""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            "empty": f"{settings.MEDIA_URL}icons/star_empty.svg",
+            "half": f"{settings.MEDIA_URL}icons/star_half.svg",
+            "full": f"{settings.MEDIA_URL}icons/star_full.svg"
+        })
