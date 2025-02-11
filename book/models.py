@@ -9,6 +9,7 @@ class Book(models.Model):
     isbn = models.CharField(max_length=13, unique=True, null=True, blank=True)
     publisher = models.CharField(max_length=255, null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
+    link = models.URLField(null=True, blank=True)  # ✅ 링크 필드 추가
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

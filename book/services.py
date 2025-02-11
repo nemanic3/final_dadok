@@ -32,5 +32,10 @@ def get_book_by_isbn_from_naver(isbn):
         response.raise_for_status()
         data = response.json()
         return data.get("items", [None])[0]
+
+        if book_data:
+            book_data["link"] = book_data.get("link", "")  # ✅ link 추가
+        return book_data
+
     except requests.exceptions.RequestException as e:
         return None

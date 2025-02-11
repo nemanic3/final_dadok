@@ -6,7 +6,7 @@ class BookSerializer(serializers.ModelSerializer):
     """ DB에 저장된 책 정보를 직렬화 """
     class Meta:
         model = Book
-        fields = ['id', 'title', 'author', 'published_date', 'isbn', 'publisher', 'image_url', 'created_at']
+        fields = ['id', 'title', 'author', 'published_date', 'isbn', 'publisher', 'image_url', 'link', 'created_at']
 
 class NaverBookSerializer(serializers.Serializer):
     """ 네이버 API 검색 결과 직렬화 """
