@@ -140,6 +140,7 @@ class BookReviewsView(APIView):
         reviews = Review.objects.filter(book=book).order_by("-created_at")
         data = [
             {
+                "review_id": review.id,  # ✅ 추가된 부분
                 "user": review.user.nickname,
                 "rating": review.rating,
                 "content": review.content[:50],  # ✅ 짧은 리뷰만 표시
