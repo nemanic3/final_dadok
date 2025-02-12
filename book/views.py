@@ -40,9 +40,14 @@ class GetBookByISBNView(APIView):
             if data:
                 serialized_data = NaverBookSerializer(data).data
                 return Response(serialized_data, status=status.HTTP_200_OK)
-            return Response({"error": "책을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)
+
+            # ❌ 기존 코드: data가 None일 경우 예외 발생 가능
+            # return Response(NaverBookSerializer(data).data, status=status.HTTP_200_OK)
+
+            return Response({"error": "책을 찾을 수 없습니다."}, status=status.HTTP_404_NOT_FOUND)  # ✅ 예외 방지
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class RecentReviewView(APIView):
     """ 최근 리뷰된 도서 목록 조회 API """

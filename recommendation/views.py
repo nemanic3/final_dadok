@@ -1,8 +1,8 @@
 from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-from .services import get_book_recommendations
+from rest_framework.permissions import AllowAny
+from .services import get_book_recommendations  # ✅ 함수 불러오기
 
 class NaverRecommendationView(APIView):
     """
@@ -11,14 +11,15 @@ class NaverRecommendationView(APIView):
     permission_classes = [AllowAny]  # ✅ 인증 없이 접근 가능
 
     def get(self, request):
-        query = request.GET.get("query", "")
+        isbn = request.GET.get("isbn", None)
+        query = request.GET.get("query", None)
         display = request.GET.get("display", 5)  # 기본 5개 반환
 
-        if not query:
-            return Response({"error": "검색어를 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
+        if not isbn and not query:
+            return Response({"error": "ISBN 또는 검색어를 입력하세요."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            recommended_books = get_book_recommendations(query, display=int(display))
+            recommended_books = get_book_recommendations(isbn=isbn, query=query, display=int(display))
             return Response(recommended_books, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

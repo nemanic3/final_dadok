@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 from .models import Review, Like, Comment
 from book.models import Book
 from .serializers import ReviewSerializer, LikeSerializer, CommentSerializer
 from book.services import get_book_by_isbn_from_naver
 from django.conf import settings
+
 
 class ReviewViewSet(viewsets.ModelViewSet):
     """ 리뷰 CRUD 기능 제공 """
@@ -40,8 +42,18 @@ class ReviewViewSet(viewsets.ModelViewSet):
                 published_date=book_data.get("pubdate", ""),
                 image_url=book_data.get("image", ""),
             )
-        serializer.context['book'] = book
-        serializer.save(user=self.request.user)
+
+        serializer.save(user=self.request.user, book=book)
+
+    def destroy(self, request, *args, **kwargs):
+        """ 리뷰 삭제 후 메시지 반환 """
+        review = get_object_or_404(Review, id=kwargs["pk"])
+
+        # ✅ 삭제 실행
+        self.perform_destroy(review)
+
+        # ✅ 삭제 성공 메시지 반환
+        return Response({"message": "Review successfully deleted."}, status=status.HTTP_200_OK)
 
 
 class LikeReviewView(APIView):
@@ -49,9 +61,7 @@ class LikeReviewView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, review_id):
-        review = Review.objects.filter(id=review_id).first()
-        if not review:
-            return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+        review = get_object_or_404(Review, id=review_id)
 
         like, created = Like.objects.get_or_create(user=request.user, review=review)
 
@@ -67,18 +77,15 @@ class CommentView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, review_id):
-        review = Review.objects.filter(id=review_id).first()
-        if not review:
-            return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+        review = get_object_or_404(Review, id=review_id)  # ✅ `get_object_or_404()` 사용하여 자동 404 반환
 
-        data = {
-            "user": request.user.id,
-            "review": review.id,
-            "content": request.data.get("content")
-        }
-        serializer = CommentSerializer(data=data)
+        content = request.data.get("content")
+        if not content or content.strip() == "":
+            return Response({"error": "댓글 내용을 입력해주세요."}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CommentSerializer(data={"review": review.id, "content": content}, context={"request": request})
         if serializer.is_valid():
-            serializer.save()
+            serializer.save()  # ✅ `user`는 `serializer.save()` 내부에서 자동 설정됨
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -99,9 +106,18 @@ class RecentReviewView(APIView):
 
     def get(self, request):
         recent_reviews = Review.objects.select_related("book").order_by("-created_at")[:6]
-        unique_books = list({review.book for review in recent_reviews})  # 중복 제거
-        data = [{"title": book.title, "image_url": book.image_url} for book in unique_books]
+        unique_books = list({review.book for review in recent_reviews if review.book})  # ✅ None 값 방지
+
+        data = [
+            {
+                "title": book.title,
+                "isbn": book.isbn,  # ✅ `isbn` 추가
+                "image_url": book.image_url
+            }
+            for book in unique_books
+        ]
         return Response(data, status=status.HTTP_200_OK)
+
 
 
 class MyLibraryView(APIView):
@@ -110,15 +126,20 @@ class MyLibraryView(APIView):
 
     def get(self, request):
         user_reviews = Review.objects.filter(user=request.user).select_related("book")
-        books = list({review.book for review in user_reviews})  # 중복 제거된 도서 목록
+        if not user_reviews.exists():
+            return Response({"message": "작성한 리뷰가 없습니다."}, status=status.HTTP_200_OK)
+
+        books = list({review.book for review in user_reviews if review.book})  # ✅ None 값 방지
+
         data = [
             {
                 "title": book.title,
+                "isbn": book.isbn,  # ✅ `isbn` 추가
                 "author": book.author,
                 "image_url": book.image_url,
                 "rating": round(
-                    sum([r.rating for r in book.reviews.filter(user=request.user) if r.rating]) /
-                    max(1, len([r.rating for r in book.reviews.filter(user=request.user) if r.rating])),
+                    sum(r.rating for r in book.reviews.filter(user=request.user) if r.rating) /
+                    max(1, book.reviews.filter(user=request.user).count()),
                     2
                 ),
                 "short_review": book.reviews.filter(user=request.user).first().content[:50] if book.reviews.filter(user=request.user).exists() else "",
@@ -128,28 +149,29 @@ class MyLibraryView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+
 class BookReviewsView(APIView):
     """ 특정 책의 최신 리뷰 목록 조회 """
     permission_classes = [AllowAny]
 
     def get(self, request, isbn):
-        book = Book.objects.filter(isbn=isbn).first()  # ✅ ISBN으로 책 조회
-        if not book:
-            return Response({"error": "해당 ISBN에 대한 책을 찾을 수 없습니다."}, status=404)
+        book = get_object_or_404(Book, isbn=isbn)
 
         reviews = Review.objects.filter(book=book).order_by("-created_at")
+        if not reviews.exists():
+            return Response({"message": "해당 ISBN에 대한 리뷰가 없습니다."}, status=200)
+
         data = [
             {
-                "review_id": review.id,  # ✅ 추가된 부분
+                "review_id": review.id,
                 "user": review.user.nickname,
                 "rating": review.rating,
-                "content": review.content[:50],  # ✅ 짧은 리뷰만 표시
+                "content": review.content[:50],
                 "created_at": review.created_at.strftime('%Y-%m-%d %H:%M:%S')
             }
             for review in reviews
         ]
         return Response(data, status=status.HTTP_200_OK)
-
 
 
 class StarIconsView(APIView):
@@ -163,7 +185,6 @@ class StarIconsView(APIView):
             "full": f"{settings.MEDIA_URL}icons/star_full.svg",
             "review": f"{settings.MEDIA_URL}icons/review_star.svg"
         })
-
 
 
 class HeartIconsView(APIView):
