@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
 from .serializers import UserSerializer, SignupSerializer
 from django.conf import settings
+from django.shortcuts import get_object_or_404  # ✅ Import 추가
 import os
 
 User = get_user_model()
@@ -127,3 +128,12 @@ class UpdateProfileImageView(APIView):
         user.save()
 
         return Response({"message": "프로필 이미지가 업데이트되었습니다.", "profile_image": f"{settings.MEDIA_URL}{selected_image}"}, status=200)
+
+class UserProfileView(APIView):
+    """ 특정 사용자의 프로필 조회 (닉네임 기반) """
+    permission_classes = [AllowAny]  # ✅ 누구나 조회 가능
+
+    def get(self, request, nickname):
+        user = get_object_or_404(User, nickname=nickname)  # ✅ 닉네임으로 사용자 검색
+        serializer = UserSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

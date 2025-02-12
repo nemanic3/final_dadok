@@ -34,3 +34,8 @@ class SignupSerializer(serializers.ModelSerializer):
         """ 비밀번호 해싱 후 저장 """
         validated_data['password'] = make_password(validated_data['password'])  # ✅ 비밀번호 해싱
         return User.objects.create(**validated_data)
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'nickname', 'email', 'profile_image']  # ✅ 필요한 필드만 포함
