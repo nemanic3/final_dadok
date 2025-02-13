@@ -155,18 +155,17 @@ class BookReviewsView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request, isbn):
-        book = get_object_or_404(Book, isbn=isbn)
+        book = Book.objects.filter(isbn=isbn).first()  # ✅ ISBN으로 책 조회
+        if not book:
+            return Response({"error": "해당 ISBN에 대한 책을 찾을 수 없습니다."}, status=404)
 
         reviews = Review.objects.filter(book=book).order_by("-created_at")
-        if not reviews.exists():
-            return Response({"message": "해당 ISBN에 대한 리뷰가 없습니다."}, status=200)
-
         data = [
             {
-                "review_id": review.id,
+                "review_id": review.id,  # ✅ 추가된 부분
                 "user": review.user.nickname,
                 "rating": review.rating,
-                "content": review.content[:50],
+                "content": review.content[:50],  # ✅ 짧은 리뷰만 표시
                 "created_at": review.created_at.strftime('%Y-%m-%d %H:%M:%S')
             }
             for review in reviews

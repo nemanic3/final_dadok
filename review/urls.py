@@ -20,7 +20,7 @@ urlpatterns = [
     path('library/', MyLibraryView.as_view(), name='my_library'),
 
     # ✅ 특정 책의 최신 리뷰 목록
-    path('book/<str:isbn>/reviews/', BookReviewsView.as_view(), name='book_reviews'),
+    path('library/<str:isbn>/', BookReviewsView.as_view(), name='book_reviews'),
 
     # ✅ 별점 이미지 URL 제공
     path('stars/', StarIconsView.as_view(), name='star_icons'),
